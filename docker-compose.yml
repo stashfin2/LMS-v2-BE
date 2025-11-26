@@ -22,8 +22,8 @@ services:
 
   db:
     extends:
-      file: ./config/docker/compose/mariadb.yml
-      service: mariadb
+      file: ./config/docker/compose/mysql.yml
+      service: mysql
 
   fineract:
     extends:
@@ -37,4 +37,4 @@ services:
     env_file:
       - ./config/docker/env/fineract.env
       - ./config/docker/env/fineract-common.env
-      - ./config/docker/env/fineract-mariadb.env
+      - ./config/docker/env/fineract-mysql.env

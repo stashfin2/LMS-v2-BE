@@ -84,9 +84,9 @@ spec:
         - name: FINERACT_NODE_ID
           value: '1'
         - name: FINERACT_HIKARI_DRIVER_CLASS_NAME
-          value: org.mariadb.jdbc.Driver
+          value: com.mysql.cj.jdbc.Driver
         - name: FINERACT_HIKARI_JDBC_URL
-          value: jdbc:mariadb://fineractmysql:3306/fineract_tenants
+          value: jdbc:mysql://fineractmysql:3306/fineract_tenants
         - name: FINERACT_HIKARI_USERNAME
           valueFrom:
             secretKeyRef:

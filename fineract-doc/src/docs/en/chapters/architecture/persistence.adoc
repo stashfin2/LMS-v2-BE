@@ -24,6 +24,9 @@ The currently supported JDBC driver and corresponding mappings can be found belo
 |`com.mysql.jdbc.Driver`
 |MySQL
 
+|`com.mysql.cj.jdbc.Driver`
+|MySQL
+
 |`org.postgresql.Driver`
 |PostgreSQL
 

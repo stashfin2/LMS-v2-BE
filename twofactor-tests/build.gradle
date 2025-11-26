@@ -67,7 +67,7 @@ cargo {
                     throw new GradleException('Provided dbType is not supported')
                 }
             } else {
-                jvmArgs += '-Dspring.datasource.hikari.driverClassName=org.mariadb.jdbc.Driver -Dspring.datasource.hikari.jdbcUrl=jdbc:mariadb://localhost:3306/fineract_tenants -Dspring.datasource.hikari.username=root -Dspring.datasource.hikari.password=mysql -Dfineract.tenant.host=localhost -Dfineract.tenant.port=3306 -Dfineract.tenant.username=root -Dfineract.tenant.password=mysql'
+                jvmArgs += '-Dspring.datasource.hikari.driverClassName=com.mysql.cj.jdbc.Driver -Dspring.datasource.hikari.jdbcUrl=jdbc:mysql://localhost:3306/fineract_tenants -Dspring.datasource.hikari.username=root -Dspring.datasource.hikari.password=mysql -Dfineract.tenant.host=localhost -Dfineract.tenant.port=3306 -Dfineract.tenant.username=root -Dfineract.tenant.password=mysql'
             }
             jvmArgs += ' -Dspring.profiles.active=test -Dfineract.events.external.enabled=true'
             property 'cargo.start.jvmargs', jvmArgs

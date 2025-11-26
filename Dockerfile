@@ -7,7 +7,7 @@ FROM eclipse-temurin:21-jdk AS build
 
 WORKDIR /workspace
 ENV GRADLE_USER_HOME=/workspace/.gradle
- 
+
 # Copy only the files required to download dependencies first to leverage Docker layer caching.
 COPY gradlew settings.gradle build.gradle gradle.properties ./
 COPY gradle gradle

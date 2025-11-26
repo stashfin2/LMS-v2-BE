@@ -20,8 +20,8 @@
 # NOTE: drop this file into your Tomcat bin folder and use it to tweak your configuration in a WAR deployment
 export FINERACT_NODE_ID="1"
 # NOTE: env vars prefixed "FINERACT_HIKARI_*" are used to configure the database connection pool
-export FINERACT_HIKARI_DRIVER_SOURCE_CLASS_NAME="org.mariadb.jdbc.Driver"
-export FINERACT_HIKARI_JDBC_URL="jdbc:mariadb://fineractmysql:3306/fineract_tenants"
+export FINERACT_HIKARI_DRIVER_SOURCE_CLASS_NAME="com.mysql.cj.jdbc.Driver"
+export FINERACT_HIKARI_JDBC_URL="jdbc:mysql://fineractmysql:3306/fineract_tenants"
 export FINERACT_HIKARI_USERNAME="root"
 export FINERACT_HIKARI_PASSWORD="skdcnwauicn2ucnaecasdsajdnizucawencascdca"
 # ... following variables are optional; "application.properties" contains reasonable defaults (same as here)

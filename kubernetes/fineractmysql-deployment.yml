@@ -86,7 +86,7 @@ spec:
         tier: fineractmysql
     spec:
       containers:
-        - image: mariadb:11.4
+        - image: mysql:8.0
           name: mysql
           resources:
             requests:
@@ -96,14 +96,16 @@ spec:
               memory: "5Gi"
               cpu: "2000m"
           env:
-            - name: MARIADB_ROOT_PASSWORD
+            - name: MYSQL_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: fineract-tenants-db-secret
                   key: password
+            - name: MYSQL_ROOT_HOST
+              value: "%"
           livenessProbe:
             exec:
-              command: ["sh","-c","mysqladmin ping -h localhost -uroot -p${MARIADB_ROOT_PASSWORD}"]
+              command: ["sh","-c","mysqladmin ping -h localhost -uroot -p${MYSQL_ROOT_PASSWORD}"]
             failureThreshold: 10
             timeoutSeconds: 10
           readinessProbe:
@@ -111,7 +113,7 @@ spec:
               command:
                 - sh
                 - -c
-                - mysqladmin ping -uroot -p${MARIADB_ROOT_PASSWORD}
+                - mysqladmin ping -uroot -p${MYSQL_ROOT_PASSWORD}
             failureThreshold: 10
             initialDelaySeconds: 5
             periodSeconds: 5

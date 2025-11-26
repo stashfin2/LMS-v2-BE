@@ -28,7 +28,7 @@ In the moment you get started writing code, please consult our [CONTRIBUTING](CO
 REQUIREMENTS
 ============
 * min. 16GB RAM and 8 core CPU
-* `MariaDB >= 11.5.2` or `PostgreSQL >= 17.0`
+* `MySQL >= 8.0` or `PostgreSQL >= 17.0`
 * `Java >= 21` (Azul Zulu JVM is tested by our CI on GitHub Actions)
 
 Tomcat (min. v10) is only required, if you wish to deploy the Fineract WAR to a separate external servlet container.  You do not need to install Tomcat to run Fineract. We recommend the use of the self-contained JAR, which transparently embeds a servlet container using Spring Boot.
@@ -44,7 +44,7 @@ For details about security during development and deployment, see the documentat
 INSTRUCTIONS
 ============
 
-The following how-to's assume you have Java installed, you cloned the repository (or downloaded and extracted a [specific version](https://github.com/apache/fineract/releases)) and you have a [database server](#database-and-tables) (MariaDB or PostgreSQL) running.
+The following how-to's assume you have Java installed, you cloned the repository (or downloaded and extracted a [specific version](https://github.com/apache/fineract/releases)) and you have a [database server](#database-and-tables) (MySQL or PostgreSQL) running.
 
 How to run for local development
 ---
@@ -88,7 +88,7 @@ Build a modern, cloud native, fully self contained JAR file:
 The JAR will be created in the `fineract-provider/build/libs` directory.
 As we are not allowed to include a JDBC driver in the built JAR, download a JDBC driver of your choice. For example:
 ```bash
-wget https://dlm.mariadb.com/4174416/Connectors/java/connector-java-3.5.2/mariadb-java-client-3.5.2.jar
+wget https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/9.2.0/mysql-connector-j-9.2.0.jar
 ```
 Start the JAR and specify the directory containing the JDBC driver using the loader.path option, for example:
 ```bash
@@ -261,16 +261,16 @@ DATABASE AND TABLES
 
 You can run the required version of the database server in a container, instead of having to install it, like this:
 
-    docker run --name mariadb-11.5 -p 3306:3306 -e MARIADB_ROOT_PASSWORD=mysql -d mariadb:11.5.2
+    docker run --name mysql-8 -p 3306:3306 -e MYSQL_ROOT_PASSWORD=mysql -e MYSQL_ROOT_HOST=% -d mysql:8.0
 
 and stop and destroy it like this:
 
-    docker rm -f mariadb-11.5
+    docker rm -f mysql-8
 
-Beware that this container database keeps its state inside the container and not on the host filesystem.  It is lost when you destroy (rm) this container.  This is typically fine for development.  See [Caveats: Where to Store Data on the database container documentation](https://hub.docker.com/_/mariadb) regarding how to make it persistent instead of ephemeral.
+Beware that this container database keeps its state inside the container and not on the host filesystem.  It is lost when you destroy (rm) this container.  This is typically fine for development.  See [Caveats: Where to Store Data on the database container documentation](https://hub.docker.com/_/mysql) regarding how to make it persistent instead of ephemeral.
 
 
-MySQL/MariaDB and UTC timezone
+MySQL and UTC timezone
 ---
 With release `1.8.0` we introduced improved date time handling in Fineract. Date time is stored in UTC, and UTC timezone enforced even on the JDBC driver, e. g. for MySQL:
 
@@ -318,10 +318,10 @@ LICENSE
 
 This project is licensed under [Apache License Version 2.0](https://github.com/apache/fineract/blob/develop/APACHE_LICENSETEXT.md).
 
-The Connector/J JDBC Driver client library from [MariaDB](https://www.mariadb.org) is licensed under the LGPL.
+The Connector/J JDBC Driver client library from [MySQL](https://dev.mysql.com/downloads/connector/j/) is licensed under GPL-2.0 with the FLOSS exception.
 The library is often used in development when running integration tests that use the Liquibase library. That JDBC
 driver is however not distributed with the Fineract product and is not required to use the product.
-If you are a developer and object to using the LGPL licensed Connector/J JDBC driver,
+If you are a developer and object to using the GPL-licensed Connector/J JDBC driver,
 simply do not run the integration tests that use the Liquibase library and use another JDBC driver.
 As discussed in [LEGAL-462](https://issues.apache.org/jira/browse/LEGAL-462), this project therefore
 complies with the [Apache Software Foundation third-party license policy](https://www.apache.org/legal/resolved.html).
