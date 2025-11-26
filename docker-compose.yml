@@ -20,10 +20,10 @@ version: "3.8"
 
 services:
 
-  db:
-    extends:
-      file: ./config/docker/compose/mysql.yml
-      service: mysql
+  # db:
+  #   extends:
+  #     file: ./config/docker/compose/mysql.yml
+  #     service: mysql
 
   fineract:
     extends:
@@ -31,10 +31,10 @@ services:
       service: fineract
     ports:
       - "8443:8443"
-    depends_on:
-      db:
-        condition: service_healthy
+    # depends_on:
+    #   db:
+    #     condition: service_healthy
     env_file:
       - ./config/docker/env/fineract.env
       - ./config/docker/env/fineract-common.env
-      - ./config/docker/env/fineract-mysql.env
+      - ./config/docker/env/fineract-external.env
