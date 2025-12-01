@@ -23,18 +23,31 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class FullCreateSavingsUnifiedResponse {
 
+    @Schema(example = "success")
     private String status;
-    private String step;
-    private String message;
-    private Long savingsAccountId;
-    private String creationStatus;
-    private String approvalStatus;
-    private String activationStatus;
-}
 
+    @Schema(example = "15")
+    private Long savingsAccountId;
+
+    @Schema(example = "created")
+    private String creationStatus;
+
+    @Schema(example = "approved")
+    private String approvalStatus;
+
+    @Schema(example = "activated")
+    private String activationStatus;
+
+    @Schema(example = "approve")
+    private String step;
+
+    @Schema(example = "Account is already approved")
+    private String message;
+}

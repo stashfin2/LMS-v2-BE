@@ -25,6 +25,11 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.apache.fineract.infrastructure.core.data.ApiGlobalErrorResponse;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.portfolio.savings.custom.data.FullCreateSavingsRequest;
@@ -33,6 +38,7 @@ import org.apache.fineract.portfolio.savings.custom.exception.FullCreateSavingsE
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+@Tag(name = "Custom Savings", description = "Custom API for creating, approving, and activating savings accounts in a single operation.")
 @Path("/custom/savings")
 @Component
 @RequiredArgsConstructor
@@ -46,6 +52,10 @@ public class CustomSavingsApiResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Transactional
+    @Operation(summary = "Create, Approve, Activate Savings Account", description = "This API creates a savings account, approves it, and activates it in a single request.", responses = {
+            @ApiResponse(responseCode = "200", description = "Savings account created and activated successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = FullCreateSavingsUnifiedResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Validation/Error while creating savings account", content = @Content(mediaType = "application/json", schema = @Schema(implementation = FullCreateSavingsUnifiedResponse.class)))
+    })
     public Response fullCreateSavings(final String apiRequestBodyAsJson) {
 
         // Basic null/empty check

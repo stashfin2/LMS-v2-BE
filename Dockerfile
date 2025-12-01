@@ -17,10 +17,7 @@ RUN chmod +x gradlew \
 
 # Now copy the full source tree and build the bootable JAR.
 COPY . .
-RUN ./gradlew :fineract-provider:bootJar -x test --no-daemon \
-    && mkdir -p /workspace/app \
-    && JAR_FILE=$(ls fineract-provider/build/libs/fineract-provider-*.jar | head -n 1) \
-    && cp "${JAR_FILE}" /workspace/app/fineract-provider.jar
+RUN ./gradlew :fineract-provider:bootJar -x test --no-daemon
 
 ##
 ## Runtime stage: run the application with a slim JRE
@@ -36,7 +33,10 @@ RUN groupadd --system fineract \
 WORKDIR ${FINERACT_HOME}
 
 # Copy the bootable jar from the build stage.
-COPY --from=build /workspace/app/fineract-provider.jar ./fineract-provider.jar
+# Use a shell command to find and copy the JAR file (handles versioned JAR names)
+RUN --mount=from=build,source=/workspace/fineract-provider/build/libs,target=/libs \
+    cp /libs/fineract-provider*.jar ./fineract-provider.jar || \
+    cp /libs/*.jar ./fineract-provider.jar
 
 # Provide a location for logs and temporary files.
 RUN mkdir -p ${FINERACT_HOME}/logs
