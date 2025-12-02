@@ -39,50 +39,52 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Tag(name = "Custom Savings", description = "Custom API for creating, approving, and activating savings accounts in a single operation.")
-@Path("/custom/savings")
+@Path("/v1/custom/savings")
 @Component
 @RequiredArgsConstructor
 public class CustomSavingsApiResource {
 
-    private final CustomSavingsWritePlatformService customSavingsWritePlatformService;
-    private final FromJsonHelper fromJsonHelper;
+        private final CustomSavingsWritePlatformService customSavingsWritePlatformService;
+        private final FromJsonHelper fromJsonHelper;
 
-    @POST
-    @Path("/full-create")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    @Transactional
-    @Operation(summary = "Create, Approve, Activate Savings Account", description = "This API creates a savings account, approves it, and activates it in a single request.", responses = {
-            @ApiResponse(responseCode = "200", description = "Savings account created and activated successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = FullCreateSavingsUnifiedResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Validation/Error while creating savings account", content = @Content(mediaType = "application/json", schema = @Schema(implementation = FullCreateSavingsUnifiedResponse.class)))
-    })
-    public Response fullCreateSavings(final String apiRequestBodyAsJson) {
+        @POST
+        @Path("/full-create")
+        @Consumes(MediaType.APPLICATION_JSON)
+        @Produces(MediaType.APPLICATION_JSON)
+        @Transactional
+        @Operation(summary = "Create, Approve, Activate Savings Account", description = "This API creates a savings account, approves it, and activates it in a single request.", responses = {
+                        @ApiResponse(responseCode = "200", description = "Savings account created and activated successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = FullCreateSavingsUnifiedResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Validation/Error while creating savings account", content = @Content(mediaType = "application/json", schema = @Schema(implementation = FullCreateSavingsUnifiedResponse.class)))
+        })
+        public Response fullCreateSavings(final String apiRequestBodyAsJson) {
 
-        // Basic null/empty check
-        if (apiRequestBodyAsJson == null || apiRequestBodyAsJson.trim().isEmpty()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(ApiGlobalErrorResponse.badClientRequest("error.msg.request.body.required",
-                            "Request body is required"))
-                    .build();
+                // Basic null/empty check
+                if (apiRequestBodyAsJson == null || apiRequestBodyAsJson.trim().isEmpty()) {
+                        return Response.status(Response.Status.BAD_REQUEST)
+                                        .entity(ApiGlobalErrorResponse.badClientRequest(
+                                                        "error.msg.request.body.required",
+                                                        "Request body is required"))
+                                        .build();
+                }
+
+                try {
+                        // Deserialize JSON to FullCreateSavingsRequest
+                        FullCreateSavingsRequest req = fromJsonHelper.fromJson(apiRequestBodyAsJson,
+                                        FullCreateSavingsRequest.class);
+
+                        FullCreateSavingsUnifiedResponse resp = customSavingsWritePlatformService
+                                        .createFullSavings(req);
+                        return Response.ok(resp).build();
+
+                } catch (FullCreateSavingsException ex) {
+                        return Response.status(Response.Status.BAD_REQUEST)
+                                        .entity(ex.getResponse())
+                                        .build();
+                } catch (Exception ex) {
+                        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                                        .entity(ApiGlobalErrorResponse.serverSideError("error.msg.unexpected.error",
+                                                        "An unexpected error occurred: " + ex.getMessage()))
+                                        .build();
+                }
         }
-
-        try {
-            // Deserialize JSON to FullCreateSavingsRequest
-            FullCreateSavingsRequest req = fromJsonHelper.fromJson(apiRequestBodyAsJson,
-                    FullCreateSavingsRequest.class);
-
-            FullCreateSavingsUnifiedResponse resp = customSavingsWritePlatformService.createFullSavings(req);
-            return Response.ok(resp).build();
-
-        } catch (FullCreateSavingsException ex) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(ex.getResponse())
-                    .build();
-        } catch (Exception ex) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(ApiGlobalErrorResponse.serverSideError("error.msg.unexpected.error",
-                            "An unexpected error occurred: " + ex.getMessage()))
-                    .build();
-        }
-    }
 }
