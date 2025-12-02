@@ -27,12 +27,16 @@ import org.apache.fineract.portfolio.savings.custom.data.FullCreateSavingsUnifie
 import org.apache.fineract.portfolio.savings.custom.exception.FullCreateSavingsException;
 import org.apache.fineract.portfolio.savings.service.SavingsAccountWritePlatformService;
 import org.apache.fineract.portfolio.savings.service.SavingsApplicationProcessWritePlatformService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class CustomSavingsWritePlatformServiceImpl implements CustomSavingsWritePlatformService {
+
+    private static final Logger LOG = LoggerFactory.getLogger(CustomSavingsWritePlatformServiceImpl.class);
 
     private final FromJsonHelper fromJsonHelper;
     private final SavingsApplicationProcessWritePlatformService savingsApplicationProcessWritePlatformService;
@@ -41,30 +45,46 @@ public class CustomSavingsWritePlatformServiceImpl implements CustomSavingsWrite
     @Override
     @Transactional
     public FullCreateSavingsUnifiedResponse createFullSavings(FullCreateSavingsRequest r) {
+        LOG.info("Starting full-create savings account process for clientId: {}, productId: {}, externalId: {}",
+                r.getClientId(), r.getProductId(), r.getExternalId());
+
         Long savingsId = null;
         try {
             // CREATE
+            LOG.info("Step 1: Creating savings account application");
             var createCmd = fromApiJson(buildCreateJson(r));
+            LOG.info("Create command: {}", createCmd.json());
             var createResult = savingsApplicationProcessWritePlatformService.submitApplication(createCmd);
+            
             savingsId = createResult.getResourceId();
+            LOG.info("Savings account application created successfully. SavingsAccountId: {}", savingsId);
 
             // APPROVE
             try {
+                LOG.debug("Step 2: Approving savings account. SavingsAccountId: {}", savingsId);
                 var approveCmd = fromApiJson(buildApproveJson(r));
                 savingsApplicationProcessWritePlatformService.approveApplication(savingsId, approveCmd);
+                LOG.info("Savings account approved successfully. SavingsAccountId: {}", savingsId);
             } catch (Exception ex) {
+                LOG.error("Failed to approve savings account. SavingsAccountId: {}, Error: {}",
+                        savingsId, ex.getMessage(), ex);
                 throw new FullCreateSavingsException("approve", ex.getMessage());
             }
 
             // ACTIVATE
             try {
+                LOG.debug("Step 3: Activating savings account. SavingsAccountId: {}", savingsId);
                 var activateCmd = fromApiJson(buildActivateJson(r));
                 savingsAccountWritePlatformService.activate(savingsId, activateCmd);
+                LOG.info("Savings account activated successfully. SavingsAccountId: {}", savingsId);
             } catch (Exception ex) {
+                LOG.error("Failed to activate savings account. SavingsAccountId: {}, Error: {}",
+                        savingsId, ex.getMessage(), ex);
                 throw new FullCreateSavingsException("activate", ex.getMessage());
             }
 
             // SUCCESS RESPONSE
+            LOG.info("Full-create savings account process completed successfully. SavingsAccountId: {}", savingsId);
             return FullCreateSavingsUnifiedResponse.builder()
                     .status("success")
                     .savingsAccountId(savingsId)
@@ -74,8 +94,12 @@ public class CustomSavingsWritePlatformServiceImpl implements CustomSavingsWrite
                     .build();
 
         } catch (FullCreateSavingsException ex) {
+            LOG.error("Full-create savings account failed at step: {}. SavingsAccountId: {}, Error: {}",
+                    ex.getResponse().getStep(), savingsId, ex.getMessage(), ex);
             throw ex; // Let API layer convert to 200/400 JSON
         } catch (Exception ex) {
+            LOG.error("Full-create savings account failed with unexpected error. SavingsAccountId: {}, Error: {}",
+                    savingsId, ex.getMessage(), ex);
             throw new FullCreateSavingsException("create", ex.getMessage());
         }
     }
