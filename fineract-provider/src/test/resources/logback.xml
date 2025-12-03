@@ -37,7 +37,7 @@
     <logger name="org.springframework.http.converter.json" level="ERROR" />
     <logger name="io.github.resilience4j.retry" level="DEBUG" />
 
-    <root level="INFO">
+    <root level="DEBUG">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>

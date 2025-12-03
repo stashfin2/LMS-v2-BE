@@ -22,6 +22,7 @@ import com.google.gson.JsonElement;
 import lombok.RequiredArgsConstructor;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.portfolio.savings.custom.data.ChargeData;
 import org.apache.fineract.portfolio.savings.custom.data.FullCreateSavingsRequest;
 import org.apache.fineract.portfolio.savings.custom.data.FullCreateSavingsUnifiedResponse;
 import org.apache.fineract.portfolio.savings.custom.exception.FullCreateSavingsException;
@@ -120,15 +121,32 @@ public class CustomSavingsWritePlatformServiceImpl implements CustomSavingsWrite
         json.append("\"clientId\": ").append(r.getClientId()).append(",");
         json.append("\"productId\": ").append(r.getProductId()).append(",");
         json.append("\"submittedOnDate\":\"").append(submittedOnDate).append("\",");
-        json.append("\"savingsAccountDetails\":{");
-        json.append("\"externalId\":\"").append(r.getExternalId()).append("\",");
+        if (r.getExternalId() != null) {
+            json.append("\"externalId\":\"").append(r.getExternalId()).append("\",");
+        }
         if (r.getOverdraftLimit() != null) {
             json.append("\"allowOverdraft\": true,");
             json.append("\"overdraftLimit\": ").append(r.getOverdraftLimit()).append(",");
         }
+        if (r.getCharges() != null && !r.getCharges().isEmpty()) {
+            json.append("\"charges\":[");
+            for (int i = 0; i < r.getCharges().size(); i++) {
+                ChargeData charge = r.getCharges().get(i);
+                if (i > 0) json.append(",");
+                json.append("{");
+                json.append("\"chargeId\":").append(charge.getChargeId());
+                if (charge.getAmount() != null) {
+                    json.append(",\"amount\":").append(charge.getAmount());
+                }
+                if (charge.getDueDate() != null) {
+                    json.append(",\"dueDate\":\"").append(charge.getDueDate()).append("\"");
+                }
+                json.append("}");
+            }
+            json.append("],");
+        }
         json.append("\"dateFormat\":\"").append(dateFormat).append("\",");
         json.append("\"locale\":\"").append(locale).append("\"");
-        json.append("}");
         json.append("}");
         return json.toString();
     }
