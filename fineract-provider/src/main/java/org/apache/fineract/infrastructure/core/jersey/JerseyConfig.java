@@ -29,6 +29,8 @@ import org.glassfish.jersey.internal.inject.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.ServerProperties;
 import org.glassfish.jersey.server.spi.internal.ValueParamProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Configuration;
@@ -36,6 +38,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 @ApplicationPath("/api")
 public class JerseyConfig extends ResourceConfig {
+
+    private static final Logger LOG = LoggerFactory.getLogger(JerseyConfig.class);
 
     JerseyConfig() {
         register(org.glassfish.jersey.media.multipart.MultiPartFeature.class);
@@ -55,7 +59,10 @@ public class JerseyConfig extends ResourceConfig {
 
     @PostConstruct
     public void setup() {
-        appCtx.getBeansWithAnnotation(Path.class).values().forEach(component -> register(component.getClass()));
+        appCtx.getBeansWithAnnotation(Path.class).values().forEach(component -> {
+            register(component.getClass());
+            LOG.info("Registered JAX-RS resource: {}", component.getClass().getName());
+        });
 
         appCtx.getBeansWithAnnotation(Provider.class).values().forEach(this::register);
     }

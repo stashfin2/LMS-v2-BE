@@ -13,12 +13,19 @@
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 # KIND, either express or implied. See the License for the
 # specific language governing permissions and limitations
+# under the License.
+#
+
 version: "3.8"
 
 services:
-  mariadb:
-    container_name: mariadb
-    image: mariadb:11.4
+  mysql:
+    container_name: mysql
+    image: mysql:8.0
+    command:
+      - "--character-set-server=utf8mb4"
+      - "--collation-server=utf8mb4_unicode_ci"
+      - "--default-authentication-plugin=mysql_native_password"
     volumes:
       - ${PWD}/config/docker/mysql/conf.d/server_collation.cnf:/etc/mysql/conf.d/server_collation.cnf:ro
       - ${PWD}/config/docker/mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:Z,ro
@@ -26,7 +33,7 @@ services:
     env_file:
       - ${PWD}/config/docker/env/mysql.env
     healthcheck:
-      test: [ "CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized" ]
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -uroot -p\"$${MYSQL_ROOT_PASSWORD}\"" ]
       timeout: 10s
       retries: 10
     ports:

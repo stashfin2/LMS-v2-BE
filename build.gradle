@@ -345,7 +345,12 @@ allprojects  {
             '**/META-INF/fineract-test.config',
             // Apache-specific GitHub metadata settings file
             '/.asf.yaml',
-            '**/*.sh'
+            '**/*.sh',
+            // Dockerfiles
+            '**/Dockerfile',
+            '**/*.Dockerfile',
+            // OpenTelemetry configuration
+            '**/otel/**/*.properties'
         ]
     }
 }
