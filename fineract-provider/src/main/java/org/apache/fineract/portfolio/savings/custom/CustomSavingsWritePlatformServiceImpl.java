@@ -22,10 +22,15 @@ import com.google.gson.JsonElement;
 import lombok.RequiredArgsConstructor;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.domain.ExternalId;
+import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
+import org.apache.fineract.infrastructure.core.service.ExternalIdFactory;
 import org.apache.fineract.portfolio.savings.custom.data.ChargeData;
 import org.apache.fineract.portfolio.savings.custom.data.FullCreateSavingsRequest;
 import org.apache.fineract.portfolio.savings.custom.data.FullCreateSavingsUnifiedResponse;
 import org.apache.fineract.portfolio.savings.custom.exception.FullCreateSavingsException;
+import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
+import org.apache.fineract.portfolio.savings.service.SavingsAccountReadPlatformService;
 import org.apache.fineract.portfolio.savings.service.SavingsAccountWritePlatformService;
 import org.apache.fineract.portfolio.savings.service.SavingsApplicationProcessWritePlatformService;
 import org.slf4j.Logger;
@@ -44,12 +49,57 @@ public class CustomSavingsWritePlatformServiceImpl implements CustomSavingsWrite
     private final FromJsonHelper fromJsonHelper;
     private final SavingsApplicationProcessWritePlatformService savingsApplicationProcessWritePlatformService;
     private final SavingsAccountWritePlatformService savingsAccountWritePlatformService;
+    private final SavingsAccountReadPlatformService savingsAccountReadPlatformService;
+    private final ExternalIdFactory externalIdFactory;
 
     @Override
     @Transactional
     public FullCreateSavingsUnifiedResponse createFullSavings(FullCreateSavingsRequest r) {
         LOG.info("Starting full-create savings account process for clientId: {}, productId: {}, externalId: {}",
                 r.getClientId(), r.getProductId(), r.getExternalId());
+
+        // Check if account already exists with externalId
+        if (r.getExternalId() != null && !r.getExternalId().trim().isEmpty()) {
+            LOG.info("Checking if savings account already exists with externalId: {}", r.getExternalId());
+            try {
+                ExternalId externalId = externalIdFactory.create(r.getExternalId());
+                Long existingAccountId = savingsAccountReadPlatformService.retrieveAccountIdByExternalId(externalId);
+
+                if (existingAccountId != null) {
+                    LOG.info("Found existing savings account with externalId: {}. AccountId: {}", r.getExternalId(),
+                            existingAccountId);
+                    SavingsAccountData existingAccount = savingsAccountReadPlatformService
+                            .retrieveOne(existingAccountId);
+
+                    if (existingAccount == null) {
+                        LOG.warn("Account with externalId {} and accountId {} not found when retrieving details",
+                                r.getExternalId(), existingAccountId);
+                    } else {
+                        boolean isApproved = existingAccount.getStatus() != null
+                                && existingAccount.getStatus().isApproved();
+                        boolean isActive = existingAccount.getStatus() != null
+                                && existingAccount.getStatus().isActive();
+
+                        LOG.info("Existing account status - Approved: {}, Active: {}", isApproved, isActive);
+
+                        // Return response with existing account details
+                        return FullCreateSavingsUnifiedResponse.builder()
+                                .status("success")
+                                .savingsAccountId(existingAccountId)
+                                .creationStatus(isActive ? "already_activated"
+                                        : (isApproved ? "already_approved" : "already_created"))
+                                .approvalStatus(isApproved ? "approved" : "pending")
+                                .activationStatus(isActive ? "activated" : "pending")
+                                .build();
+                    }
+                }
+            } catch (Exception ex) {
+                LOG.warn(
+                        "Error checking for existing account with externalId: {}. Error: {}. Proceeding with creation.",
+                        r.getExternalId(), ex.getMessage(), ex);
+                // Continue with creation if check fails
+            }
+        }
 
         Long savingsId = null;
         try {
