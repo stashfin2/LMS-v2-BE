@@ -19,8 +19,10 @@
 package org.apache.fineract.portfolio.savings.custom;
 
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -35,6 +37,7 @@ import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.portfolio.savings.custom.data.FullCreateSavingsRequest;
 import org.apache.fineract.portfolio.savings.custom.data.FullCreateSavingsUnifiedResponse;
 import org.apache.fineract.portfolio.savings.custom.exception.FullCreateSavingsException;
+import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
@@ -50,7 +53,42 @@ public class CustomSavingsApiResource {
         private static final Logger LOG = LoggerFactory.getLogger(CustomSavingsApiResource.class);
 
         private final CustomSavingsWritePlatformService customSavingsWritePlatformService;
+        private final CustomSavingsReadPlatformService customSavingsReadPlatformService;
+        private final PlatformSecurityContext context;
         private final FromJsonHelper fromJsonHelper;
+
+        @GET
+        @Path("/{savingsAccountId}/transactions")
+        @Produces(MediaType.APPLICATION_JSON)
+        @Operation(summary = "Retrieve transactions for a savings account", description = "Executes a custom query to return transactions for the provided savings account id.")
+        public Response retrieveTransactions(@PathParam("savingsAccountId") Long savingsAccountId) {
+                LOG.info("Received request to fetch custom savings transactions for savingsAccountId={}", savingsAccountId);
+                if (savingsAccountId == null) {
+                        LOG.warn("Savings account id is required for fetching transactions");
+                        return Response.status(Response.Status.BAD_REQUEST)
+                                        .entity(ApiGlobalErrorResponse.badClientRequest("error.msg.savings.id.required",
+                                                        "Savings account id is required"))
+                                        .build();
+                }
+
+                try {
+                        context.authenticatedUser();
+                        var transactions = customSavingsReadPlatformService.retrieveTransactions(savingsAccountId);
+                        return Response.ok(transactions).build();
+                } catch (DataAccessException ex) {
+                        LOG.error("Failed to fetch transactions for savingsAccountId={}. Error: {}", savingsAccountId, ex.getMessage(), ex);
+                        return Response.status(Response.Status.BAD_REQUEST)
+                                        .entity(ApiGlobalErrorResponse.badClientRequest("error.msg.savings.transactions.fetch.failed",
+                                                        "Unable to fetch savings transactions: " + ex.getMessage()))
+                                        .build();
+                } catch (Exception ex) {
+                        LOG.error("Unexpected error fetching transactions for savingsAccountId={}. Error: {}", savingsAccountId, ex.getMessage(), ex);
+                        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                                        .entity(ApiGlobalErrorResponse.serverSideError("error.msg.savings.transactions.fetch.unexpected",
+                                                        "Unexpected error fetching savings transactions: " + ex.getMessage()))
+                                        .build();
+                }
+        }
 
         @POST
         @Path("/full-create")
