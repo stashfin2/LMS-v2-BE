@@ -24,8 +24,10 @@ import org.apache.fineract.portfolio.savings.custom.data.FullCreateSavingsUnifie
 public interface CustomSavingsWritePlatformService {
 
     /**
-     * Accepts the incoming request and performs creation, approval and activation. Returns a structured
+     * Accepts the incoming request and performs creation, approval and optionally activation. Returns a structured
      * result suitable for REST response.
+     * @param request The savings account creation request
+     * @param toActivate If true, activates the account after approval. If false, skips activation.
      */
-    FullCreateSavingsUnifiedResponse createFullSavings(FullCreateSavingsRequest request);
+    FullCreateSavingsUnifiedResponse createFullSavings(FullCreateSavingsRequest request, Boolean toActivate);
 }

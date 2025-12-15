@@ -19,11 +19,13 @@
 package org.apache.fineract.portfolio.savings.custom;
 
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
@@ -94,11 +96,13 @@ public class CustomSavingsApiResource {
         @Path("/full-create")
         @Consumes(MediaType.APPLICATION_JSON)
         @Produces(MediaType.APPLICATION_JSON)
-        @Operation(summary = "Create, Approve, Activate Savings Account", description = "This API creates a savings account, approves it, and activates it in a single request.", responses = {
+        @Operation(summary = "Create, Approve, Activate Savings Account", description = "This API creates a savings account, approves it, and optionally activates it in a single request.", responses = {
                         @ApiResponse(responseCode = "200", description = "Savings account created and activated successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = FullCreateSavingsUnifiedResponse.class))),
                         @ApiResponse(responseCode = "400", description = "Validation/Error while creating savings account", content = @Content(mediaType = "application/json", schema = @Schema(implementation = FullCreateSavingsUnifiedResponse.class)))
         })
-        public Response fullCreateSavings(final String apiRequestBodyAsJson) {
+        public Response fullCreateSavings(
+                        @QueryParam("toActivate") @DefaultValue("true") Boolean toActivate,
+                        final String apiRequestBodyAsJson) {
                 LOG.info("Received full-create savings account request. Request body length: {}",
                                 apiRequestBodyAsJson != null ? apiRequestBodyAsJson.length() : 0);
 
@@ -141,13 +145,13 @@ public class CustomSavingsApiResource {
                                                 .build();
                         }
 
-                        LOG.info("Processing full-create savings account for clientId: {}, productId: {}, externalId: {}",
-                                        req.getClientId(), req.getProductId(), req.getExternalId());
+                        LOG.info("Processing full-create savings account for clientId: {}, productId: {}, externalId: {}, toActivate: {}",
+                                        req.getClientId(), req.getProductId(), req.getExternalId(), toActivate);
 
                         LOG.debug("Calling downstream service: createFullSavings");
                         FullCreateSavingsUnifiedResponse resp = null;
                         try {
-                                resp = customSavingsWritePlatformService.createFullSavings(req);
+                                resp = customSavingsWritePlatformService.createFullSavings(req, toActivate);
                                 if (resp == null) {
                                         LOG.error("Downstream service createFullSavings returned null response for clientId: {}, productId: {}",
                                                         req.getClientId(), req.getProductId());

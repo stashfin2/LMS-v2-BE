@@ -23,7 +23,6 @@ import lombok.RequiredArgsConstructor;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.domain.ExternalId;
-import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.service.ExternalIdFactory;
 import org.apache.fineract.portfolio.savings.custom.data.ChargeData;
 import org.apache.fineract.portfolio.savings.custom.data.FullCreateSavingsRequest;
@@ -54,9 +53,9 @@ public class CustomSavingsWritePlatformServiceImpl implements CustomSavingsWrite
 
     @Override
     @Transactional
-    public FullCreateSavingsUnifiedResponse createFullSavings(FullCreateSavingsRequest r) {
-        LOG.info("Starting full-create savings account process for clientId: {}, productId: {}, externalId: {}",
-                r.getClientId(), r.getProductId(), r.getExternalId());
+    public FullCreateSavingsUnifiedResponse createFullSavings(FullCreateSavingsRequest r, Boolean toActivate) {
+        LOG.info("Starting full-create savings account process for clientId: {}, productId: {}, externalId: {}, toActivate: {}",
+                r.getClientId(), r.getProductId(), r.getExternalId(), toActivate);
 
         // Check if account already exists with externalId
         if (r.getExternalId() != null && !r.getExternalId().trim().isEmpty()) {
@@ -192,55 +191,63 @@ public class CustomSavingsWritePlatformServiceImpl implements CustomSavingsWrite
                         "Failed to approve savings account: " + ex.getMessage());
             }
 
-            // ACTIVATE
-            try {
-                LOG.info("Step 3: Activating savings account. SavingsAccountId: {}, ClientId: {}", savingsId,
-                        r.getClientId());
-                LOG.debug("Building activate JSON command for savingsAccountId: {}", savingsId);
-                var activateCmd = fromApiJson(buildActivateJson(r));
-                LOG.debug("Activate command JSON: {}", activateCmd.json());
+            // ACTIVATE (conditional)
+            String activationStatus = "pending";
+            if (Boolean.TRUE.equals(toActivate)) {
+                try {
+                    LOG.info("Step 3: Activating savings account. SavingsAccountId: {}, ClientId: {}", savingsId,
+                            r.getClientId());
+                    LOG.debug("Building activate JSON command for savingsAccountId: {}", savingsId);
+                    var activateCmd = fromApiJson(buildActivateJson(r));
+                    LOG.debug("Activate command JSON: {}", activateCmd.json());
 
-                LOG.info("Calling downstream service: activate for savingsAccountId: {}", savingsId);
-                var activateResult = savingsAccountWritePlatformService.activate(savingsId, activateCmd);
+                    LOG.info("Calling downstream service: activate for savingsAccountId: {}", savingsId);
+                    var activateResult = savingsAccountWritePlatformService.activate(savingsId, activateCmd);
 
-                if (activateResult == null) {
-                    LOG.warn("Downstream service activate returned null result for savingsAccountId: {}", savingsId);
-                } else {
-                    LOG.debug("Activate result: ResourceId={}, OfficeId={}, ClientId={}",
-                            activateResult.getResourceId(), activateResult.getOfficeId(), activateResult.getClientId());
+                    if (activateResult == null) {
+                        LOG.warn("Downstream service activate returned null result for savingsAccountId: {}", savingsId);
+                    } else {
+                        LOG.debug("Activate result: ResourceId={}, OfficeId={}, ClientId={}",
+                                activateResult.getResourceId(), activateResult.getOfficeId(), activateResult.getClientId());
+                    }
+
+                    LOG.info("Savings account activated successfully. SavingsAccountId: {}, ClientId: {}", savingsId,
+                            r.getClientId());
+                    activationStatus = "activated";
+                } catch (FullCreateSavingsException ex) {
+                    LOG.error("Failed to activate savings account. SavingsAccountId: {}, ClientId: {}, Error: {}",
+                            savingsId, r.getClientId(), ex.getMessage(), ex);
+                    throw ex;
+                } catch (DataAccessException | PersistenceException ex) {
+                    String errorDetails = extractDataIntegrityErrorDetails(ex);
+                    LOG.error(
+                            "Data integrity violation while activating savings account. SavingsAccountId: {}, ClientId: {}, Error: {}, ErrorDetails: {}, ExceptionType: {}",
+                            savingsId, r.getClientId(), ex.getMessage(), errorDetails, ex.getClass().getName(), ex);
+                    throw new FullCreateSavingsException("activate",
+                            "Data integrity issue during activation: " + errorDetails);
+                } catch (Exception ex) {
+                    LOG.error(
+                            "Failed to activate savings account. SavingsAccountId: {}, ClientId: {}, Error: {}, ExceptionType: {}",
+                            savingsId, r.getClientId(), ex.getMessage(), ex.getClass().getName(), ex);
+                    throw new FullCreateSavingsException("activate",
+                            "Failed to activate savings account: " + ex.getMessage());
                 }
-
-                LOG.info("Savings account activated successfully. SavingsAccountId: {}, ClientId: {}", savingsId,
+            } else {
+                LOG.info("Step 3: Skipping activation as toActivate=false. SavingsAccountId: {}, ClientId: {}", savingsId,
                         r.getClientId());
-            } catch (FullCreateSavingsException ex) {
-                LOG.error("Failed to activate savings account. SavingsAccountId: {}, ClientId: {}, Error: {}",
-                        savingsId, r.getClientId(), ex.getMessage(), ex);
-                throw ex;
-            } catch (DataAccessException | PersistenceException ex) {
-                String errorDetails = extractDataIntegrityErrorDetails(ex);
-                LOG.error(
-                        "Data integrity violation while activating savings account. SavingsAccountId: {}, ClientId: {}, Error: {}, ErrorDetails: {}, ExceptionType: {}",
-                        savingsId, r.getClientId(), ex.getMessage(), errorDetails, ex.getClass().getName(), ex);
-                throw new FullCreateSavingsException("activate",
-                        "Data integrity issue during activation: " + errorDetails);
-            } catch (Exception ex) {
-                LOG.error(
-                        "Failed to activate savings account. SavingsAccountId: {}, ClientId: {}, Error: {}, ExceptionType: {}",
-                        savingsId, r.getClientId(), ex.getMessage(), ex.getClass().getName(), ex);
-                throw new FullCreateSavingsException("activate",
-                        "Failed to activate savings account: " + ex.getMessage());
+                activationStatus = "pending";
             }
 
             // SUCCESS RESPONSE
             LOG.info(
-                    "Full-create savings account process completed successfully. SavingsAccountId: {}, ClientId: {}, ProductId: {}",
-                    savingsId, r.getClientId(), r.getProductId());
+                    "Full-create savings account process completed successfully. SavingsAccountId: {}, ClientId: {}, ProductId: {}, ActivationStatus: {}",
+                    savingsId, r.getClientId(), r.getProductId(), activationStatus);
             return FullCreateSavingsUnifiedResponse.builder()
                     .status("success")
                     .savingsAccountId(savingsId)
                     .creationStatus("created")
                     .approvalStatus("approved")
-                    .activationStatus("activated")
+                    .activationStatus(activationStatus)
                     .build();
 
         } catch (FullCreateSavingsException ex) {
