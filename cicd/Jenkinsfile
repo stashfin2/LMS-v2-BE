@@ -3,9 +3,9 @@ pipeline {
     options {
         disableConcurrentBuilds(abortPrevious: true)
     }
-    triggers {
-        pollSCM('H/5 * * * *')
-    }
+    // triggers {
+    //     pollSCM('H/5 * * * *')
+    // }
     environment {
         AWS_REGION = 'ap-south-1'
         ECR_REPO = '331916247734.dkr.ecr.ap-south-1.amazonaws.com/'
