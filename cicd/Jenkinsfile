@@ -6,10 +6,19 @@ pipeline {
     // triggers {
     //     pollSCM('H/5 * * * *')
     // }
+    parameters {
+        string(
+            name: 'JIRA_TICKET_NUMBER',
+            defaultValue: 'LMS-V2-BE-123',
+            description: 'Enter JIRA Ticket Number or JIRA Link'
+        )
+    }
+    
     environment {
         AWS_REGION = 'ap-south-1'
         ECR_REPO = '331916247734.dkr.ecr.ap-south-1.amazonaws.com/'
         GOOGLE_CHAT_WEBHOOK_URL = 'https://chat.googleapis.com/v1/spaces/AAAApDxURgA/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=ayajkdVUtdsxtNjaXpplwDeLDPwJ2iAjra9xE3wxjuU'
+        SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/t0ak5977c01/b0bpt1d6xqx/pxo8bcxq2wivivdrw7fiznqq'
         CREDENTIAL_ID = "stashfin2-github-jenkins-integrate"
         GIT_REPO_URLS = 'github.com/stashfin2/infraverse.git'
     }
@@ -20,7 +29,7 @@ pipeline {
                 container('dind'){
                     script {
                         withCredentials([usernamePassword(credentialsId: "stashfin2-github-jenkins-integrate", usernameVariable: 'GITHUB_APP_ID', passwordVariable: 'GITHUB_APP_TOKEN')]) {
-                            sh "rm -rf infraverse && git clone https://${GITHUB_APP_ID}:${GITHUB_APP_TOKEN}@github.com/stashfin2/infraverse.git"
+                            sh "rm -rf infraverse && git clone --branch akara-prod-pipeline https://${GITHUB_APP_ID}:${GITHUB_APP_TOKEN}@github.com/stashfin2/infraverse.git"
                         }
                         sh 'ls -l infraverse'
                     }
@@ -32,7 +41,7 @@ pipeline {
                 container('dind') {
                     script {
                         infra = load "${env.WORKSPACE}/infraverse/Jenkinsfile.groovy"
-                        infra.executePipeline()
+                        infra.executePipeline(params.JIRA_TICKET_NUMBER)
                     }
                 }
             }
