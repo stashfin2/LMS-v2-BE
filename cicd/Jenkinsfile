@@ -18,7 +18,7 @@ pipeline {
         AWS_REGION = 'ap-south-1'
         ECR_REPO = '331916247734.dkr.ecr.ap-south-1.amazonaws.com/'
         GOOGLE_CHAT_WEBHOOK_URL = 'https://chat.googleapis.com/v1/spaces/AAAApDxURgA/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=ayajkdVUtdsxtNjaXpplwDeLDPwJ2iAjra9xE3wxjuU'
-        SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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'
+        SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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'
         CREDENTIAL_ID = "stashfin2-github-jenkins-integrate"
         GIT_REPO_URLS = 'github.com/stashfin2/infraverse.git'
     }
